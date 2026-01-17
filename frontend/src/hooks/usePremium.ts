@@ -1,112 +1,68 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { useProgram, BN, SystemProgram, PublicKey } from './useProgram';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 const PREMIUM_PRICE = 0.1; // SOL
-const PREMIUM_LAMPORTS = PREMIUM_PRICE * LAMPORTS_PER_SOL;
+const TREASURY = new PublicKey('BycRJnXXAHuCMNUR9xY67rKkAvGqf4Z9KwPuRbYExKos'); // Your program ID as treasury
 
 export function usePremium() {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { program, programId } = useProgram();
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
-  const getStatePDA = useCallback(() => {
-    if (!programId) return null;
-    const [pda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('state')],
-      programId
-    );
-    return pda;
-  }, [programId]);
-
-  // Check if program is initialized
+  // Check premium status on mount
   useEffect(() => {
-    const check = async () => {
-      if (!program) return;
-      try {
-        const statePDA = getStatePDA();
-        if (!statePDA) return;
-        const state = await program.account.programState.fetchNullable(statePDA);
-        setIsInitialized(!!state);
-      } catch (e) {
-        setIsInitialized(false);
-      }
-    };
-    check();
-  }, [program, getStatePDA]);
-
-  // Initialize program if needed
-  const initializeProgram = useCallback(async () => {
-    if (!program || !publicKey) return false;
-    
-    try {
-      const statePDA = getStatePDA();
-      if (!statePDA) return false;
-
-      const tx = await program.methods
-        .initialize()
-        .accounts({
-          state: statePDA,
-          authority: publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
-      
-      console.log('✅ Program initialized:', tx);
-      setIsInitialized(true);
-      return true;
-    } catch (err: any) {
-      if (err.message?.includes('already in use')) {
-        setIsInitialized(true);
-        return true;
-      }
-      console.error('Init failed:', err);
-      return false;
+    if (publicKey) {
+      const stored = localStorage.getItem(`premium_${publicKey.toBase58()}`);
+      setIsPremium(stored === 'true');
     }
-  }, [program, publicKey, getStatePDA]);
+  }, [publicKey]);
 
   const purchasePremium = useCallback(async (): Promise<string | null> => {
-    if (!program || !publicKey) return null;
+    if (!publicKey) return null;
 
     setIsPurchasing(true);
     try {
-      // Initialize if needed
-      if (!isInitialized) {
-        const success = await initializeProgram();
-        if (!success) {
-          setIsPurchasing(false);
-          return null;
-        }
-      }
-
-      const statePDA = getStatePDA();
-      if (!statePDA) return null;
-
-      // Use program authority as treasury for now
-      const treasury = publicKey; // In production, use a separate treasury
-
-      const tx = await program.methods
-        .purchasePremium()
-        .accounts({
-          state: statePDA,
-          buyer: publicKey,
-          treasury: treasury,
-          systemProgram: SystemProgram.programId,
+      // Create a simple SOL transfer transaction
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: TREASURY,
+          lamports: PREMIUM_PRICE * LAMPORTS_PER_SOL,
         })
-        .rpc();
+      );
 
-      console.log('✅ Premium purchased:', tx);
-      return tx;
+      // Get latest blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      // Send transaction
+      const signature = await sendTransaction(transaction, connection);
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
+
+      console.log('✅ Premium purchased:', signature);
+      
+      // Save premium status
+      localStorage.setItem(`premium_${publicKey.toBase58()}`, 'true');
+      setIsPremium(true);
+
+      return signature;
     } catch (err: any) {
       console.error('Purchase failed:', err);
       return null;
     } finally {
       setIsPurchasing(false);
     }
-  }, [program, publicKey, getStatePDA, isInitialized, initializeProgram]);
+  }, [publicKey, connection, sendTransaction]);
 
-  return { purchasePremium, isPurchasing, premiumPrice: PREMIUM_PRICE, isInitialized };
+  return { 
+    purchasePremium, 
+    isPurchasing, 
+    isPremium,
+    premiumPrice: PREMIUM_PRICE 
+  };
 }
