@@ -1,0 +1,628 @@
+{
+  "address": "BycRJnXXAHuCMNUR9xY67rKkAvGqf4Z9KwPuRbYExKos",
+  "metadata": {
+    "name": "confessions",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "like_confession",
+      "discriminator": [
+        72,
+        77,
+        60,
+        228,
+        163,
+        36,
+        92,
+        71
+      ],
+      "accounts": [
+        {
+          "name": "confession",
+          "writable": true
+        },
+        {
+          "name": "liker",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "purchase_premium",
+      "discriminator": [
+        32,
+        62,
+        214,
+        250,
+        245,
+        224,
+        162,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_preferences",
+      "discriminator": [
+        40,
+        134,
+        109,
+        241,
+        97,
+        147,
+        201,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "interests",
+          "type": {
+            "array": [
+              "u8",
+              10
+            ]
+          }
+        },
+        {
+          "name": "age_min",
+          "type": "u8"
+        },
+        {
+          "name": "age_max",
+          "type": "u8"
+        },
+        {
+          "name": "user_age",
+          "type": "u8"
+        },
+        {
+          "name": "looking_for",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "request_match",
+      "discriminator": [
+        238,
+        15,
+        134,
+        69,
+        73,
+        79,
+        210,
+        175
+      ],
+      "accounts": [
+        {
+          "name": "requester",
+          "signer": true
+        },
+        {
+          "name": "target_profile"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "submit_confession",
+      "discriminator": [
+        19,
+        236,
+        47,
+        108,
+        246,
+        239,
+        229,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "confession",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state.confession_count",
+                "account": "ProgramState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "submitter",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "content_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "category",
+          "type": "u8"
+        },
+        {
+          "name": "is_premium",
+          "type": "bool"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Confession",
+      "discriminator": [
+        148,
+        143,
+        193,
+        47,
+        121,
+        155,
+        96,
+        130
+      ]
+    },
+    {
+      "name": "ProgramState",
+      "discriminator": [
+        77,
+        209,
+        137,
+        229,
+        149,
+        67,
+        167,
+        230
+      ]
+    },
+    {
+      "name": "UserProfile",
+      "discriminator": [
+        32,
+        37,
+        119,
+        205,
+        179,
+        180,
+        13,
+        194
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ConfessionLiked",
+      "discriminator": [
+        7,
+        26,
+        121,
+        218,
+        25,
+        241,
+        100,
+        53
+      ]
+    },
+    {
+      "name": "ConfessionSubmitted",
+      "discriminator": [
+        241,
+        169,
+        57,
+        247,
+        34,
+        48,
+        119,
+        11
+      ]
+    },
+    {
+      "name": "MatchRequested",
+      "discriminator": [
+        200,
+        22,
+        149,
+        50,
+        238,
+        62,
+        100,
+        75
+      ]
+    },
+    {
+      "name": "PreferencesRegistered",
+      "discriminator": [
+        106,
+        255,
+        44,
+        239,
+        200,
+        57,
+        77,
+        199
+      ]
+    },
+    {
+      "name": "PremiumPurchased",
+      "discriminator": [
+        26,
+        73,
+        118,
+        28,
+        134,
+        175,
+        91,
+        144
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "Confession",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "content_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "type": "u8"
+          },
+          {
+            "name": "is_premium",
+            "type": "bool"
+          },
+          {
+            "name": "likes",
+            "type": "u32"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "submitter",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfessionLiked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "confession_id",
+            "type": "u64"
+          },
+          {
+            "name": "new_likes",
+            "type": "u32"
+          },
+          {
+            "name": "liker",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfessionSubmitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "category",
+            "type": "u8"
+          },
+          {
+            "name": "is_premium",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MatchRequested",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "requester",
+            "type": "pubkey"
+          },
+          {
+            "name": "target",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PreferencesRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "interests",
+            "type": {
+              "array": [
+                "u8",
+                10
+              ]
+            }
+          },
+          {
+            "name": "looking_for",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PremiumPurchased",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_sold",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgramState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "confession_count",
+            "type": "u64"
+          },
+          {
+            "name": "total_premium_sold",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserProfile",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "interests",
+            "type": {
+              "array": [
+                "u8",
+                10
+              ]
+            }
+          },
+          {
+            "name": "age_min",
+            "type": "u8"
+          },
+          {
+            "name": "age_max",
+            "type": "u8"
+          },
+          {
+            "name": "user_age",
+            "type": "u8"
+          },
+          {
+            "name": "looking_for",
+            "type": "u8"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          }
+        ]
+      }
+    }
+  ]
+}
