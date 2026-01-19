@@ -3,13 +3,13 @@ import { Shield } from 'lucide-react';
 export default function Footer() {
   return (
     <footer className="footer">
-      <div className="container">
-        <div className="footer-content">
+      <div className="container footer-container">
+        <div className="footer-top">
           <div className="footer-brand">
             <Link to="/" className="nav-logo">
               Whisp<span>r</span>
             </Link>
-            <p>Anonymous confessions & confidential matchmaking powered by Arcium MPC.</p>
+            <p className="footer-desc">Anonymous confessions & confidential matchmaking powered by Arcium MPC.</p>
           </div>
           
           <div className="footer-links">
@@ -26,7 +26,7 @@ export default function Footer() {
             <Shield size={12} />
             <span>End-to-end encrypted</span>
           </div>
-          <span>Built with Arcium on Solana</span>
+          <span className="footer-credit">Built with Arcium on Solana</span>
         </div>
       </div>
     </footer>
