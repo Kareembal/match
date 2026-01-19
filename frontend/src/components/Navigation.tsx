@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
-import { usePrivy, useSolanaWallets } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { Shield, Home, MessageCircle, Heart, Crown, Book, LogOut, Wallet, Copy, Check, ExternalLink } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 const navItems = [
   { to: '/', icon: <Home size={16} />, label: 'Home' },
@@ -13,21 +13,30 @@ const navItems = [
 const connection = new Connection('https://api.devnet.solana.com');
 export default function Navigation() {
   const { ready, authenticated, login, logout, user } = usePrivy();
-  const { wallets } = useSolanaWallets();
+  const { wallets } = useWallets();
   const [showWallet, setShowWallet] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
-  // Get wallet address from Solana wallets or user object
-  const address = wallets?.[0]?.address || user?.wallet?.address || '';
+  // Get any wallet address (Solana preferred)
+  const address = useMemo(() => {
+    // Try to find Solana wallet (not starting with 0x)
+    const solWallet = wallets.find((w: any) => w.address && !w.address.startsWith('0x'));
+    if (solWallet) return solWallet.address;
+    // Fallback to user wallet
+    if (user?.wallet?.address && !user.wallet.address.startsWith('0x')) {
+      return user.wallet.address;
+    }
+    return '';
+  }, [wallets, user]);
   const shortAddress = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
   useEffect(() => {
-    if (address) {
+    if (address && !address.startsWith('0x')) {
       try {
         const pk = new PublicKey(address);
         connection.getBalance(pk).then(bal => {
           setBalance(bal / LAMPORTS_PER_SOL);
         }).catch(() => setBalance(null));
-      } catch (e) {
+      } catch {
         setBalance(null);
       }
     }
@@ -88,20 +97,20 @@ export default function Navigation() {
                     </button>
                   </div>
                   
-                  {balance !== null ? (
-                    <div className="wallet-balance">
-                      <span className="balance-amount">{balance.toFixed(4)}</span>
-                      <span className="balance-label">SOL (Devnet)</span>
-                    </div>
-                  ) : (
-                    <div className="wallet-balance">
-                      <span className="balance-amount">--</span>
-                      <span className="balance-label">Loading...</span>
-                    </div>
-                  )}
-                  
                   {address ? (
                     <>
+                      {balance !== null ? (
+                        <div className="wallet-balance">
+                          <span className="balance-amount">{balance.toFixed(4)}</span>
+                          <span className="balance-label">SOL (Devnet)</span>
+                        </div>
+                      ) : (
+                        <div className="wallet-balance">
+                          <span className="balance-amount">--</span>
+                          <span className="balance-label">Loading...</span>
+                        </div>
+                      )}
+                      
                       <div className="wallet-address">
                         <code>{shortAddress}</code>
                         <button onClick={copyAddress} className="btn btn-ghost" style={{ padding: 4 }}>
@@ -116,12 +125,12 @@ export default function Navigation() {
                         className="btn btn-secondary"
                         style={{ width: '100%', justifyContent: 'center', marginTop: 8, fontSize: '0.8rem' }}
                       >
-                        View on Explorer <ExternalLink size={12} />
+                        Explorer <ExternalLink size={12} />
                       </a>
                     </>
                   ) : (
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: 8 }}>
-                      No Solana wallet linked yet
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: 12 }}>
+                      No Solana wallet detected.<br/>Link one in Privy settings.
                     </p>
                   )}
                 </div>
