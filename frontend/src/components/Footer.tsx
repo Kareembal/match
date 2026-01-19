@@ -1,18 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
-
 export default function Footer() {
   return (
     <footer className="footer">
       <div className="container">
         <div className="footer-content">
           <div className="footer-brand">
-            <Link to="/" className="nav-logo" style={{ marginBottom: 8 }}>
+            <Link to="/" className="nav-logo">
               Whisp<span>r</span>
             </Link>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: 250 }}>
-              Anonymous confessions & confidential matchmaking powered by Arcium MPC.
-            </p>
+            <p>Anonymous confessions & confidential matchmaking powered by Arcium MPC.</p>
           </div>
           
           <div className="footer-links">
@@ -29,9 +26,7 @@ export default function Footer() {
             <Shield size={12} />
             <span>End-to-end encrypted</span>
           </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Built with Arcium on Solana
-          </span>
+          <span>Built with Arcium on Solana</span>
         </div>
       </div>
     </footer>

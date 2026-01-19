@@ -483,3 +483,89 @@ textarea { resize: vertical; min-height: 100px; }
   padding: 8px 16px;
   font-size: 0.85rem;
 }
+/* Wallet Dropdown */
+.wallet-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 220px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 200;
+}
+.wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.wallet-balance {
+  text-align: center;
+  padding: 16px;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.balance-amount {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+.balance-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.wallet-address {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+.wallet-address code {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+/* Footer mobile fix */
+@media (max-width: 768px) {
+  .footer {
+    text-align: center;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .footer-brand {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  
+  .footer-brand p {
+    max-width: 100%;
+    font-size: 0.8rem;
+  }
+  
+  .footer-links {
+    justify-content: center;
+    gap: 16px;
+  }
+  
+  .footer-bottom {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.75rem;
+  }
+  
+  .wallet-dropdown {
+    right: -50px;
+  }
+}
