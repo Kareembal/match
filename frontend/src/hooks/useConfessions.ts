@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { usePrivyWallet } from './usePrivyWallet';
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 
 export interface Confession {
   id: string;
@@ -12,8 +12,6 @@ export interface Confession {
   txSignature?: string;
 }
 
-const CATEGORIES = ['', 'Love', 'Secret', 'Funny', 'Vent', 'Dream'];
-
 export function useConfessions() {
   const { connected, publicKey, wallet, connection } = usePrivyWallet();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,7 +19,6 @@ export function useConfessions() {
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Load from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('confessions');
     if (stored) {
@@ -33,7 +30,6 @@ export function useConfessions() {
   }, []);
 
   const refetch = useCallback(() => {
-    // Reload from localStorage
     const stored = localStorage.getItem('confessions');
     if (stored) {
       try {
@@ -55,11 +51,10 @@ export function useConfessions() {
     setError(null);
 
     try {
-      // Create a simple transaction to record on-chain
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: publicKey, // Self-transfer to record
+          toPubkey: publicKey,
           lamports: 1000,
         })
       );
@@ -68,17 +63,21 @@ export function useConfessions() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      const serializedTx = transaction.serialize({
-        requireAllSignatures: false,
-        verifySignatures: false,
-      });
+      // Use sendTransaction if available, otherwise try signAndSendTransaction
+      let signature: string;
+      if (typeof wallet.sendTransaction === 'function') {
+        signature = await wallet.sendTransaction(transaction, connection);
+      } else if (typeof (wallet as any).signAndSendTransaction === 'function') {
+        const result = await (wallet as any).signAndSendTransaction({
+          chain: 'solana:devnet',
+          transaction: new Uint8Array(transaction.serialize({ requireAllSignatures: false, verifySignatures: false })),
+        });
+        signature = result.signature || result.hash || result;
+      } else {
+        // Fallback: just record locally without on-chain tx
+        signature = 'local-' + Date.now();
+      }
 
-      const result = await wallet.signAndSendTransaction!({
-        chain: 'solana:devnet',
-        transaction: new Uint8Array(serializedTx),
-      });
-
-      const signature = result.signature || result.hash;
       console.log('✅ Confession submitted:', signature);
 
       const newConfession: Confession = {

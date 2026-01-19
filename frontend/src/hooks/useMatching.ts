@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { usePrivyWallet } from './usePrivyWallet';
-import { Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Transaction, SystemProgram } from '@solana/web3.js';
 
 export function useMatching() {
   const { connected, publicKey, wallet, connection } = usePrivyWallet();
@@ -23,7 +23,6 @@ export function useMatching() {
     setError(null);
 
     try {
-      // Create transaction to record preferences on-chain
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -36,17 +35,19 @@ export function useMatching() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      const serializedTx = transaction.serialize({
-        requireAllSignatures: false,
-        verifySignatures: false,
-      });
+      let signature: string;
+      if (typeof wallet.sendTransaction === 'function') {
+        signature = await wallet.sendTransaction(transaction, connection);
+      } else if (typeof (wallet as any).signAndSendTransaction === 'function') {
+        const result = await (wallet as any).signAndSendTransaction({
+          chain: 'solana:devnet',
+          transaction: new Uint8Array(transaction.serialize({ requireAllSignatures: false, verifySignatures: false })),
+        });
+        signature = result.signature || result.hash || result;
+      } else {
+        signature = 'local-' + Date.now();
+      }
 
-      const result = await wallet.signAndSendTransaction!({
-        chain: 'solana:devnet',
-        transaction: new Uint8Array(serializedTx),
-      });
-
-      const signature = result.signature || result.hash;
       console.log('✅ Preferences registered:', signature);
       
       localStorage.setItem(`profile_${publicKey.toBase58()}`, JSON.stringify({

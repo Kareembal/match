@@ -22,7 +22,9 @@ export default function App() {
         },
         loginMethods: ['email', 'wallet'],
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
+          solana: {
+            createOnLogin: 'users-without-wallets',
+          },
         },
       }}
     >

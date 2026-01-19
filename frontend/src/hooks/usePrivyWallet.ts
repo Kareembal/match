@@ -10,7 +10,11 @@ export function usePrivyWallet() {
 
   const solanaWallet = useMemo(() => {
     // Find Solana wallet (embedded or external)
-    return wallets.find(w => w.walletClientType === 'privy' || w.chainType === 'solana');
+    return wallets.find((w: any) => 
+      w.walletClientType === 'privy' || 
+      w.type === 'solana' ||
+      w.address?.length === 44 // Solana addresses are 44 chars
+    );
   }, [wallets]);
 
   const publicKey = useMemo(() => {
@@ -31,7 +35,7 @@ export function usePrivyWallet() {
     connected,
     authenticated,
     publicKey,
-    wallet: solanaWallet,
+    wallet: solanaWallet as any,
     connection,
     user,
   };

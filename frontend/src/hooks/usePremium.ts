@@ -36,18 +36,19 @@ export function usePremium() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      // Serialize and send via Privy
-      const serializedTx = transaction.serialize({
-        requireAllSignatures: false,
-        verifySignatures: false,
-      });
+      let signature: string;
+      if (typeof wallet.sendTransaction === 'function') {
+        signature = await wallet.sendTransaction(transaction, connection);
+      } else if (typeof (wallet as any).signAndSendTransaction === 'function') {
+        const result = await (wallet as any).signAndSendTransaction({
+          chain: 'solana:devnet',
+          transaction: new Uint8Array(transaction.serialize({ requireAllSignatures: false, verifySignatures: false })),
+        });
+        signature = result.signature || result.hash || result;
+      } else {
+        throw new Error('Wallet does not support transactions');
+      }
 
-      const result = await wallet.signAndSendTransaction!({
-        chain: 'solana:devnet',
-        transaction: new Uint8Array(serializedTx),
-      });
-
-      const signature = result.signature || result.hash;
       console.log('✅ Premium purchased:', signature);
       
       localStorage.setItem(`premium_${publicKey.toBase58()}`, 'true');
