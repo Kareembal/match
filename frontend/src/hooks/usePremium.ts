@@ -1,30 +1,29 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { usePrivyWallet } from './usePrivyWallet';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
-const PREMIUM_PRICE = 0.1; // SOL
-const TREASURY = new PublicKey('BycRJnXXAHuCMNUR9xY67rKkAvGqf4Z9KwPuRbYExKos'); // Your program ID as treasury
+const PREMIUM_PRICE = 0.1;
+const TREASURY = new PublicKey('BycRJnXXAHuCMNUR9xY67rKkAvGqf4Z9KwPuRbYExKos');
 
 export function usePremium() {
-  const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
+  const { connected, publicKey, wallet, connection } = usePrivyWallet();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
 
-  // Check premium status on mount
   useEffect(() => {
     if (publicKey) {
       const stored = localStorage.getItem(`premium_${publicKey.toBase58()}`);
       setIsPremium(stored === 'true');
+    } else {
+      setIsPremium(false);
     }
   }, [publicKey]);
 
   const purchasePremium = useCallback(async (): Promise<string | null> => {
-    if (!publicKey) return null;
+    if (!publicKey || !wallet || !connected) return null;
 
     setIsPurchasing(true);
     try {
-      // Create a simple SOL transfer transaction
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -33,20 +32,24 @@ export function usePremium() {
         })
       );
 
-      // Get latest blockhash
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      // Send transaction
-      const signature = await sendTransaction(transaction, connection);
-      
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
+      // Serialize and send via Privy
+      const serializedTx = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false,
+      });
 
+      const result = await wallet.signAndSendTransaction!({
+        chain: 'solana:devnet',
+        transaction: new Uint8Array(serializedTx),
+      });
+
+      const signature = result.signature || result.hash;
       console.log('✅ Premium purchased:', signature);
       
-      // Save premium status
       localStorage.setItem(`premium_${publicKey.toBase58()}`, 'true');
       setIsPremium(true);
 
@@ -57,12 +60,7 @@ export function usePremium() {
     } finally {
       setIsPurchasing(false);
     }
-  }, [publicKey, connection, sendTransaction]);
+  }, [publicKey, wallet, connected, connection]);
 
-  return { 
-    purchasePremium, 
-    isPurchasing, 
-    isPremium,
-    premiumPrice: PREMIUM_PRICE 
-  };
+  return { purchasePremium, isPurchasing, isPremium, premiumPrice: PREMIUM_PRICE };
 }

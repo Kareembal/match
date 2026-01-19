@@ -1,35 +1,48 @@
 import { useMemo } from 'react';
-import { useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
-import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
-import { PublicKey, SystemProgram } from '@solana/web3.js';
+import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
+import { Program, AnchorProvider, BN } from '@coral-xyz/anchor';
+import { usePrivyWallet } from './usePrivyWallet';
+
+// Import the IDL
 import idl from '../idl/confessions.json';
 
-export const PROGRAM_ID = new PublicKey('BycRJnXXAHuCMNUR9xY67rKkAvGqf4Z9KwPuRbYExKos');
-
-export function useProgram() {
-  const { connection } = useConnection();
-  const wallet = useAnchorWallet();
-
-  const provider = useMemo(() => {
-    if (!wallet) return null;
-    return new AnchorProvider(connection, wallet, { commitment: 'confirmed' });
-  }, [connection, wallet]);
-
-  const program = useMemo(() => {
-    if (!provider) return null;
-    return new Program(idl as unknown as Idl, provider);
-  }, [provider]);
-
-  return { program, provider, programId: PROGRAM_ID };
-}
-
-export function stringToBytes32(str: string): number[] {
-  const bytes = new TextEncoder().encode(str);
-  const result = new Array(32).fill(0);
-  for (let i = 0; i < Math.min(bytes.length, 32); i++) {
-    result[i] = bytes[i];
-  }
-  return result;
-}
+const PROGRAM_ID = new PublicKey('BycRJnXXAHuCMNUR9xY67rKkAvGqf4Z9KwPuRbYExKos');
+const DEVNET_RPC = 'https://api.devnet.solana.com';
 
 export { BN, SystemProgram, PublicKey };
+
+export function useProgram() {
+  const { connected, publicKey, wallet } = usePrivyWallet();
+  const connection = useMemo(() => new Connection(DEVNET_RPC), []);
+
+  const program = useMemo(() => {
+    if (!connected || !publicKey || !wallet) return null;
+
+    try {
+      // Create a simple wallet adapter for Anchor
+      const walletAdapter = {
+        publicKey,
+        signTransaction: async (tx: any) => {
+          // Privy handles signing
+          return tx;
+        },
+        signAllTransactions: async (txs: any[]) => {
+          return txs;
+        },
+      };
+
+      const provider = new AnchorProvider(
+        connection,
+        walletAdapter as any,
+        { commitment: 'confirmed' }
+      );
+
+      return new Program(idl as any, provider);
+    } catch (e) {
+      console.error('Failed to create program:', e);
+      return null;
+    }
+  }, [connected, publicKey, wallet, connection]);
+
+  return { program, programId: PROGRAM_ID, connection };
+}

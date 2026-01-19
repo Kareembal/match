@@ -1,4 +1,7 @@
+[cluster]
+offset = 456
+
 [localnet]
 nodes = 2
-localnet_timeout_secs = 120
+localnet_timeout_secs = 300
 backends = ["Cerberus"]

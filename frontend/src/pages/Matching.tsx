@@ -1,159 +1,206 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Heart, Users, Sparkles, Lock, Check, MapPin, Star, ChevronRight, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { usePrivy } from '@privy-io/react-auth';
+import { usePrivyWallet } from '../hooks/usePrivyWallet';
+import { Heart, Users, Loader2, CheckCircle, Shield, ExternalLink, AlertCircle } from 'lucide-react';
+import { useMatching } from '../hooks/useMatching';
 
-const interestOptions = ['Music', 'Art', 'Travel', 'Food', 'Gaming', 'Fitness', 'Reading', 'Movies', 'Tech', 'Nature'];
-const sampleMatches = [
-  { id: 1, name: 'User #7a3f', compatibility: 87, interests: 4, isPremium: true },
-  { id: 2, name: 'User #9b2c', compatibility: 74, interests: 3, isPremium: false },
-];
+const interests = ['Music', 'Art', 'Tech', 'Sports', 'Travel', 'Food', 'Gaming', 'Fitness'];
+const lookingForOptions = ['Friends', 'Dating', 'Networking', 'Any'];
 
 export default function Matching() {
-  const { connected } = useWallet();
+  const { login } = usePrivy();
+  const { connected, publicKey } = usePrivyWallet();
+  const { registerPreferences, isRegistering, error } = useMatching();
+  
   const [step, setStep] = useState(1);
-  const [showResults, setShowResults] = useState(false);
-  const [profile, setProfile] = useState({ interests: [] as string[], lookingFor: 'dating', location: '' });
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [lookingFor, setLookingFor] = useState('Any');
+  const [age, setAge] = useState(25);
+  const [registered, setRegistered] = useState(false);
+  const [txSignature, setTxSignature] = useState<string | null>(null);
+  const [txError, setTxError] = useState<string | null>(null);
 
-  const handleInterestToggle = (interest: string) => {
-    setProfile(prev => ({
-      ...prev,
-      interests: prev.interests.includes(interest) ? prev.interests.filter(i => i !== interest) : [...prev.interests, interest]
-    }));
+  const toggleInterest = (interest: string) => {
+    setSelectedInterests(prev => 
+      prev.includes(interest) 
+        ? prev.filter(i => i !== interest)
+        : prev.length < 5 ? [...prev, interest] : prev
+    );
   };
 
-  const handleSubmit = async () => {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setShowResults(true);
+  const handleRegister = async () => {
+    setTxError(null);
+    
+    const interestIndexes = selectedInterests.map(i => interests.indexOf(i) + 1);
+    const lookingForIndex = lookingForOptions.indexOf(lookingFor) + 1;
+    
+    const sig = await registerPreferences(interestIndexes, 18, 99, age, lookingForIndex);
+    
+    if (sig) {
+      setTxSignature(sig);
+      setRegistered(true);
+    } else {
+      setTxError(error || 'Transaction failed. Please try again.');
+    }
   };
+
+  if (!connected) {
+    return (
+      <div className="page">
+        <div className="container">
+          <div style={{ textAlign: 'center', maxWidth: 400, margin: '0 auto', paddingTop: 60 }}>
+            <Users size={48} style={{ color: 'var(--text-muted)', marginBottom: 24 }} />
+            <h2 style={{ marginBottom: 8 }}>Sign In Required</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>
+              Sign in to set up matching preferences
+            </p>
+            <button className="btn btn-primary" onClick={login}>Sign In</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (registered) {
+    return (
+      <div className="page">
+        <div className="container">
+          <div style={{ textAlign: 'center', maxWidth: 500, margin: '0 auto', paddingTop: 40 }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+              <div style={{ width: 80, height: 80, background: 'rgba(16, 185, 129, 0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                <CheckCircle size={40} style={{ color: 'var(--success)' }} />
+              </div>
+              <h2 style={{ marginBottom: 8 }}>Success!</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
+                Your preferences are now encrypted on-chain.
+              </p>
+              
+              {txSignature && (
+                <a 
+                  href={`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="badge badge-success"
+                  style={{ marginBottom: 24, padding: '10px 16px' }}
+                >
+                  <CheckCircle size={14} /> Transaction Confirmed <ExternalLink size={12} />
+                </a>
+              )}
+
+              <div className="card" style={{ padding: 24, textAlign: 'left', marginTop: 24 }}>
+                <h4 style={{ marginBottom: 16 }}>Your Profile</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                  {selectedInterests.map(i => (
+                    <span key={i} className="badge badge-active">{i}</span>
+                  ))}
+                </div>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  Looking for: <strong>{lookingFor}</strong> • Age: <strong>{age}</strong>
+                </p>
+              </div>
+
+              <div className="card" style={{ padding: 24, marginTop: 16, textAlign: 'center' }}>
+                <Shield size={24} style={{ color: 'var(--accent)', marginBottom: 12 }} />
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  No matches yet. Matches will appear when compatible users join.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
       <div className="container">
         <div className="page-header">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="gradient-text" style={{ marginBottom: 'var(--space-4)' }}>Confidential Matching</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Find compatible people. Only mutual matches are revealed.</p>
-          </motion.div>
+          <h1 className="page-title">Confidential <span className="accent">Matching</span></h1>
+          <p className="page-subtitle">Find compatible connections privately</p>
         </div>
 
-        {!connected ? (
-          <div className="card" style={{ textAlign: 'center', padding: 'var(--space-12)', maxWidth: '500px', margin: '0 auto' }}>
-            <Heart size={48} style={{ color: 'var(--primary)', marginBottom: 'var(--space-4)' }} />
-            <h3 style={{ marginBottom: 'var(--space-2)' }}>Connect to Start Matching</h3>
-            <p style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-6)' }}>Connect your wallet to create your encrypted profile</p>
-            <WalletMultiButton />
-          </div>
-        ) : showResults ? (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-6)' }}>
-              <div>
-                <h2>Your Matches</h2>
-                <p style={{ color: 'var(--text-tertiary)' }}>{sampleMatches.length} compatible profiles found</p>
-              </div>
-              <button className="btn btn-secondary" onClick={() => { setShowResults(false); setStep(1); }}>Update Preferences</button>
-            </div>
-            <div className="encryption-indicator" style={{ marginBottom: 'var(--space-6)' }}>
-              <span className="encryption-dot"></span>
-              <Shield size={14} />
-              <span>Match results encrypted — only you can see these</span>
-            </div>
-            {sampleMatches.map((match, i) => (
-              <motion.div key={match.id} className="card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                    <div className="match-avatar">{match.name.slice(-2).toUpperCase()}</div>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <span className="match-name">{match.name}</span>
-                        {match.isPremium && <span className="badge badge-premium"><Sparkles size={10} /> Premium</span>}
-                      </div>
-                      <div className="match-compatibility"><Star size={12} /> {match.interests} shared interests</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 700, color: match.compatibility >= 80 ? 'var(--success)' : 'var(--warning)' }}>{match.compatibility}%</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Compatibility</div>
-                    </div>
-                    <button className="btn btn-primary btn-icon"><ChevronRight size={20} /></button>
-                  </div>
-                </div>
-              </motion.div>
+        <div style={{ maxWidth: 500, margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
+            {[1, 2, 3].map(s => (
+              <div key={s} style={{ flex: 1, height: 4, borderRadius: 2, background: step >= s ? 'var(--accent)' : 'var(--border)' }} />
             ))}
           </div>
-        ) : (
-          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-8)' }}>
-              {[1, 2, 3].map(s => (
-                <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: step >= s ? 'var(--gradient-primary)' : 'var(--surface)', border: step >= s ? 'none' : '1px solid var(--border)', color: step >= s ? 'white' : 'var(--text-muted)', fontWeight: 600 }}>
-                    {step > s ? <Check size={16} /> : s}
-                  </div>
-                  {s < 3 && <div style={{ width: '60px', height: '2px', background: step > s ? 'var(--primary)' : 'var(--border)', margin: '0 var(--space-2)' }} />}
+
+          <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+            {step === 1 && (
+              <div className="card" style={{ padding: 24 }}>
+                <h3 style={{ marginBottom: 8 }}>Select Interests</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>
+                  Choose up to 5 interests ({selectedInterests.length}/5)
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+                  {interests.map(i => (
+                    <button key={i} className={`badge ${selectedInterests.includes(i) ? 'badge-active' : ''}`} style={{ cursor: 'pointer', padding: '8px 16px' }} onClick={() => toggleInterest(i)}>
+                      {i}
+                    </button>
+                  ))}
                 </div>
-              ))}
+                <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setStep(2)} disabled={selectedInterests.length === 0}>
+                  Continue
+                </button>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="card" style={{ padding: 24 }}>
+                <h3 style={{ marginBottom: 8 }}>Looking For</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>What type of connections?</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+                  {lookingForOptions.map(o => (
+                    <button key={o} className={`card ${lookingFor === o ? 'card-accent' : ''}`} style={{ padding: 16, textAlign: 'left', cursor: 'pointer', border: '1px solid var(--border)' }} onClick={() => setLookingFor(o)}>
+                      {o}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setStep(1)}>Back</button>
+                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setStep(3)}>Continue</button>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="card" style={{ padding: 24 }}>
+                <h3 style={{ marginBottom: 8 }}>Your Age</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>For age-appropriate matches</p>
+                <div style={{ marginBottom: 24 }}>
+                  <input type="number" value={age} onChange={(e) => setAge(parseInt(e.target.value) || 18)} min={18} max={99} style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 700 }} />
+                </div>
+
+                {txError && (
+                  <div style={{ marginBottom: 16, padding: 12, background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--error)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <AlertCircle size={16} /> {txError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setStep(2)}>Back</button>
+                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleRegister} disabled={isRegistering}>
+                    {isRegistering ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <><Heart size={16} /> Save</>}
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
+          <div className="card" style={{ padding: 16, marginTop: 24, textAlign: 'center' }}>
+            <div className="status-indicator" style={{ marginBottom: 8 }}>
+              <span className="status-dot"></span>
+              <Shield size={12} />
+              <span>Encrypted</span>
             </div>
-            <div className="card" style={{ padding: 'var(--space-8)' }}>
-              <AnimatePresence mode="wait">
-                {step === 1 && (
-                  <motion.div key="step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-                      <Users size={40} style={{ color: 'var(--primary)', marginBottom: 'var(--space-3)' }} />
-                      <h3>What are you looking for?</h3>
-                    </div>
-                    {['dating', 'friends', 'networking'].map(opt => (
-                      <div key={opt} className="card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-3)', cursor: 'pointer', border: profile.lookingFor === opt ? '2px solid var(--primary)' : undefined }} onClick={() => setProfile({ ...profile, lookingFor: opt })}>
-                        {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                      </div>
-                    ))}
-                    <button className="btn btn-primary" style={{ width: '100%', marginTop: 'var(--space-4)' }} onClick={() => setStep(2)}>Continue</button>
-                  </motion.div>
-                )}
-                {step === 2 && (
-                  <motion.div key="step2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-                      <Star size={40} style={{ color: 'var(--primary)', marginBottom: 'var(--space-3)' }} />
-                      <h3>Select Your Interests</h3>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: 'var(--space-6)' }}>
-                      {interestOptions.map(interest => (
-                        <button key={interest} className={`badge ${profile.interests.includes(interest) ? 'badge-premium' : ''}`} style={{ cursor: 'pointer' }} onClick={() => handleInterestToggle(interest)}>
-                          {profile.interests.includes(interest) && <Check size={12} />} {interest}
-                        </button>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-                      <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setStep(1)}>Back</button>
-                      <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setStep(3)} disabled={profile.interests.length < 3}>Continue</button>
-                    </div>
-                  </motion.div>
-                )}
-                {step === 3 && (
-                  <motion.div key="step3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-                      <MapPin size={40} style={{ color: 'var(--primary)', marginBottom: 'var(--space-3)' }} />
-                      <h3>Almost Done!</h3>
-                    </div>
-                    <input placeholder="Location (optional)" value={profile.location} onChange={(e) => setProfile({ ...profile, location: e.target.value })} style={{ marginBottom: 'var(--space-6)' }} />
-                    <div className="encryption-indicator" style={{ marginBottom: 'var(--space-6)' }}>
-                      <span className="encryption-dot"></span>
-                      <Lock size={14} />
-                      <span>Preferences will be encrypted before submission</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-                      <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setStep(2)}>Back</button>
-                      <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSubmit}>
-                        <Heart size={18} /> Find Matches
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Preferences encrypted on-chain via Arcium MPC
+            </p>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

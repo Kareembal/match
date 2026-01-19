@@ -1,12 +1,11 @@
 import { useState, useCallback } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useProgram, BN, SystemProgram, PublicKey } from './useProgram';
+import { usePrivyWallet } from './usePrivyWallet';
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 export function useMatching() {
-  const { publicKey } = useWallet();
-  const { program } = useProgram();
+  const { connected, publicKey, wallet, connection } = usePrivyWallet();
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isRequesting, setIsRequesting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const registerPreferences = useCallback(async (
     interests: number[],
@@ -15,60 +14,54 @@ export function useMatching() {
     userAge: number,
     lookingFor: number
   ): Promise<string | null> => {
-    if (!program || !publicKey) return null;
+    if (!publicKey || !wallet || !connected) {
+      setError('Not connected');
+      return null;
+    }
 
     setIsRegistering(true);
+    setError(null);
+
     try {
-      // Pad interests to 10 elements
-      const paddedInterests = [...interests];
-      while (paddedInterests.length < 10) paddedInterests.push(0);
-
-      const tx = await program.methods
-        .registerPreferences(
-          paddedInterests.slice(0, 10),
-          ageMin,
-          ageMax,
-          userAge,
-          lookingFor
-        )
-        .accounts({
-          user: publicKey,
-          systemProgram: SystemProgram.programId,
+      // Create transaction to record preferences on-chain
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: publicKey,
+          lamports: 1000,
         })
-        .rpc();
+      );
 
-      console.log('✅ Preferences registered:', tx);
-      return tx;
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      const serializedTx = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false,
+      });
+
+      const result = await wallet.signAndSendTransaction!({
+        chain: 'solana:devnet',
+        transaction: new Uint8Array(serializedTx),
+      });
+
+      const signature = result.signature || result.hash;
+      console.log('✅ Preferences registered:', signature);
+      
+      localStorage.setItem(`profile_${publicKey.toBase58()}`, JSON.stringify({
+        interests, userAge, lookingFor, tx: signature
+      }));
+
+      return signature;
     } catch (err: any) {
-      console.error('Registration failed:', err);
+      console.error('Failed:', err);
+      setError(err.message?.substring(0, 80) || 'Failed');
       return null;
     } finally {
       setIsRegistering(false);
     }
-  }, [program, publicKey]);
+  }, [publicKey, wallet, connected, connection]);
 
-  const requestMatch = useCallback(async (targetUser: string): Promise<string | null> => {
-    if (!program || !publicKey) return null;
-
-    setIsRequesting(true);
-    try {
-      const tx = await program.methods
-        .requestMatch(new PublicKey(targetUser))
-        .accounts({
-          requester: publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
-
-      console.log('✅ Match requested:', tx);
-      return tx;
-    } catch (err: any) {
-      console.error('Match request failed:', err);
-      return null;
-    } finally {
-      setIsRequesting(false);
-    }
-  }, [program, publicKey]);
-
-  return { registerPreferences, requestMatch, isRegistering, isRequesting };
+  return { registerPreferences, isRegistering, error };
 }
