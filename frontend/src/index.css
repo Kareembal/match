@@ -644,3 +644,29 @@ textarea { resize: vertical; min-height: 100px; }
     text-align: center;
   }
 }
+
+/* Wallet dropdown mobile fix */
+@media (max-width: 768px) {
+  .wallet-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 80px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: 100%;
+  }
+  
+  .nav-actions {
+    gap: 8px;
+  }
+  
+  .nav-actions .btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .nav-actions .status-indicator {
+    display: none;
+  }
+}
