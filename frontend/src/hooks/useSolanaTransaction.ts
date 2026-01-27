@@ -1,4 +1,4 @@
-import { useSolanaWallets, useSignAndSendTransaction as usePrivySignAndSend } from '@privy-io/react-auth/solana';
+import { useSolanaWallets, useSendTransaction } from '@privy-io/react-auth/solana';
 import { Connection, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { useMemo, useCallback } from 'react';
 
@@ -6,11 +6,10 @@ const DEVNET_RPC = 'https://api.devnet.solana.com';
 
 export function useSolanaTransaction() {
   const { wallets, ready } = useSolanaWallets();
-  const { signAndSendTransaction } = usePrivySignAndSend();
+  const { sendTransaction: privySendTransaction } = useSendTransaction();
   
   const connection = useMemo(() => new Connection(DEVNET_RPC, 'confirmed'), []);
   
-  // Get the embedded Solana wallet
   const wallet = useMemo(() => {
     return wallets.find(w => w.walletClientType === 'privy') || wallets[0] || null;
   }, [wallets]);
@@ -29,14 +28,13 @@ export function useSolanaTransaction() {
   const sendTransaction = useCallback(async (transaction: Transaction | VersionedTransaction) => {
     if (!wallet) throw new Error('No wallet connected');
     
-    // Use Privy's signAndSendTransaction
-    const result = await signAndSendTransaction(transaction as any, {
+    const result = await privySendTransaction(transaction as any, {
       wallet,
       connection,
     });
     
     return result.signature;
-  }, [wallet, connection, signAndSendTransaction]);
+  }, [wallet, connection, privySendTransaction]);
   
   return {
     connected,
