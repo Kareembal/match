@@ -145,7 +145,7 @@ export default function Confessions() {
                   <span className="badge">{conf.category}</span>
                   {conf.isPremium && <span className="badge" style={{ background: 'rgba(139, 92, 246, 0.2)', borderColor: 'rgba(139, 92, 246, 0.3)' }}><Sparkles size={10} /></span>}
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{conf.timestamp.toLocaleTimeString()}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{conf.timestamp.toLocaleString()}</span>
               </div>
               <p style={{ marginBottom: 12, lineHeight: 1.6, fontSize: 14 }}>{conf.content}</p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
