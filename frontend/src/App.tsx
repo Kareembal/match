@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { PrivyProvider } from '@privy-io/react-auth';
+import { toSolanaWalletConnectors } from '@privy-io/react-auth/solana';
 
 // Components
 import Navigation from './components/Navigation';
@@ -14,6 +15,10 @@ import Docs from './pages/Docs';
 
 const PRIVY_APP_ID = 'cmkl3fxr900p7jj0czonilcnk';
 
+const solanaConnectors = toSolanaWalletConnectors({
+  shouldAutoConnect: true,
+});
+
 function App() {
     return (
         <PrivyProvider
@@ -25,12 +30,21 @@ function App() {
                     accentColor: '#a855f7',
                 },
                 embeddedWallets: {
-                    createOnLogin: 'all-users',
+                    ethereum: {
+                        createOnLogin: 'off',
+                    },
+                    solana: {
+                        createOnLogin: 'all-users',
+                    },
+                },
+                externalWallets: {
+                    solana: {
+                        connectors: solanaConnectors,
+                    },
                 },
                 solanaClusters: [
                     { name: 'devnet', rpcUrl: 'https://api.devnet.solana.com' },
                 ],
-                defaultChain: undefined,
             }}
         >
             <BrowserRouter>
