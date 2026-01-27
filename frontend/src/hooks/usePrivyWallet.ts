@@ -1,39 +1,47 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
+import { useSolanaWallets } from '@privy-io/react-auth/solana';
 import { useMemo } from 'react';
 import { Connection, PublicKey } from '@solana/web3.js';
+
 const DEVNET_RPC = 'https://api.devnet.solana.com';
+
 export function usePrivyWallet() {
-  const { ready, authenticated, user } = usePrivy();
-  const { wallets } = useWallets();
-  // Find Solana wallet - check if address looks like Solana (44 chars, base58)
+  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { wallets, ready: walletsReady } = useSolanaWallets();
+
+  // Get the first Solana wallet (embedded or external)
   const solanaWallet = useMemo(() => {
-    const wallet = wallets.find((w: any) => {
-      const addr = w.address;
-      // Solana addresses are 32-44 chars base58
-      return addr && addr.length >= 32 && addr.length <= 44 && !addr.startsWith('0x');
-    });
-    return wallet || null;
+    if (!wallets || wallets.length === 0) return null;
+    // Prefer embedded wallet
+    const embedded = wallets.find(w => w.walletClientType === 'privy');
+    return embedded || wallets[0] || null;
   }, [wallets]);
-  // Fallback to user.wallet if available
-  const address = solanaWallet?.address || user?.wallet?.address || '';
+
+  const address = solanaWallet?.address || '';
+
   const publicKey = useMemo(() => {
-    if (!address || address.startsWith('0x')) return null;
+    if (!address) return null;
     try {
       return new PublicKey(address);
     } catch {
       return null;
     }
   }, [address]);
-  const connection = useMemo(() => new Connection(DEVNET_RPC), []);
-  const connected = ready && authenticated && !!publicKey;
+
+  const connection = useMemo(() => new Connection(DEVNET_RPC, 'confirmed'), []);
+
+  const connected = ready && walletsReady && authenticated && !!publicKey;
+
   return {
-    ready,
+    ready: ready && walletsReady,
     connected,
     authenticated,
     publicKey,
-    wallet: solanaWallet as any,
+    wallet: solanaWallet,
     connection,
     user,
     address,
+    login,
+    logout,
   };
 }

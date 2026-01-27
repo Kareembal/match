@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { usePrivyWallet } from './usePrivyWallet';
-import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+import { useSendTransaction } from '@privy-io/react-auth/solana';
+import { Transaction, SystemProgram } from '@solana/web3.js';
 
 export interface Confession {
   id: string;
@@ -14,6 +15,7 @@ export interface Confession {
 
 export function useConfessions() {
   const { connected, publicKey, wallet, connection } = usePrivyWallet();
+  const { sendTransaction } = useSendTransaction();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [confessions, setConfessions] = useState<Confession[]>([]);
@@ -51,6 +53,7 @@ export function useConfessions() {
     setError(null);
 
     try {
+      // Small self-transfer to record on-chain
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -63,20 +66,9 @@ export function useConfessions() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      // Use sendTransaction if available, otherwise try signAndSendTransaction
-      let signature: string;
-      if (typeof wallet.sendTransaction === 'function') {
-        signature = await wallet.sendTransaction(transaction, connection);
-      } else if (typeof (wallet as any).signAndSendTransaction === 'function') {
-        const result = await (wallet as any).signAndSendTransaction({
-          chain: 'solana:devnet',
-          transaction: new Uint8Array(transaction.serialize({ requireAllSignatures: false, verifySignatures: false })),
-        });
-        signature = result.signature || result.hash || result;
-      } else {
-        // Fallback: just record locally without on-chain tx
-        signature = 'local-' + Date.now();
-      }
+      // Use Privy's sendTransaction hook
+      const result = await sendTransaction(transaction);
+      const signature = result.signature;
 
       console.log('✅ Confession submitted:', signature);
 
@@ -102,7 +94,7 @@ export function useConfessions() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [publicKey, wallet, connected, connection, confessions]);
+  }, [publicKey, wallet, connected, connection, confessions, sendTransaction]);
 
   const likeConfession = useCallback(async (confessionId: string): Promise<string | null> => {
     setConfessions(prev => {
