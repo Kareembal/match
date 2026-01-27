@@ -15,6 +15,7 @@ import Home from './pages/Home';
 import Confessions from './pages/Confessions';
 import Matching from './pages/Matching';
 import Premium from './pages/Premium';
+import Docs from './pages/Docs';
 
 // Wallet adapter styles
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -61,6 +62,7 @@ function App() {
                                         <Route path="/confessions" element={<Confessions />} />
                                         <Route path="/matching" element={<Matching />} />
                                         <Route path="/premium" element={<Premium />} />
+                                        <Route path="/docs" element={<Docs />} />
                                     </Routes>
                                 </main>
                                 <Footer />

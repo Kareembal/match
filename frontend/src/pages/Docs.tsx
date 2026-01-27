@@ -4,8 +4,8 @@ import { useState } from 'react';
 
 const contracts = {
   programId: '8kUxrbtzcR5fJe46C23tmtN3LKYhRdKJ9r7R5sSecbnE',
-  mxeAccount: '5tgstAkgJh6LMgkLHHd4oc6gQWkUWPRupWVyo497rgxpzasYowDxEWyXt3UEVQZqzYdpycZq1jidUWU9dLQgqnMb',
-  deployTx: '5QaPHdYKogiPqZ8rUCU1NcbUnRDqNXc8fqKSJqfJ8biXj9cvrJKqxjpUN35mUm7PMEiCtrSfEoizXxYaLyPGEVJA',
+  mxeAccount: '3J2hrrEfTCdJY7mQjGfYqaMqocridFbx7rGCAAv4pgawy5fYggMuqUQzL7rRK28wc5dhn4cfKssiwc3JK8XWPy2g',
+  deployTx: '4YNDea5nxa412DCv1TybPP1zJ94Wk2qULdcaXc3cgUVQsnqoLTiTTtLabHEawSXBJceBZvhK57SqWAjVXDgH5gaS',
   clusterOffset: 456,
 };
 

@@ -670,3 +670,58 @@ textarea { resize: vertical; min-height: 100px; }
     display: none;
   }
 }
+
+/* Mobile Menu */
+.mobile-menu-btn { display: none; }
+.hide-mobile { }
+
+@media (max-width: 768px) {
+  .mobile-menu-btn { display: flex !important; padding: 8px !important; }
+  .hide-mobile { display: none !important; }
+  
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 80px;
+  }
+  
+  .mobile-menu {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    width: calc(100% - 40px);
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .mobile-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    color: var(--text-muted);
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+  }
+  
+  .mobile-nav-link:hover,
+  .mobile-nav-link.active {
+    background: var(--bg-tertiary);
+    color: var(--text);
+  }
+  
+  .mobile-nav-link.active {
+    color: var(--accent);
+  }
+}
