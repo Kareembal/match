@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { usePrivyWallet } from './usePrivyWallet';
 import { useSendTransaction } from '@privy-io/react-auth/solana';
 import { Transaction, SystemProgram } from '@solana/web3.js';
+import { database, ref, push, onValue, update, query, orderByChild, limitToLast } from '../lib/firebase';
 
 export interface Confession {
   id: string;
@@ -9,7 +10,7 @@ export interface Confession {
   category: string;
   likes: number;
   isPremium: boolean;
-  timestamp: Date;
+  timestamp: number;
   txSignature?: string;
 }
 
@@ -17,28 +18,50 @@ export function useConfessions() {
   const { connected, publicKey, wallet, connection } = usePrivyWallet();
   const { sendTransaction } = useSendTransaction();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // Listen to Firebase for real-time updates
   useEffect(() => {
-    const stored = localStorage.getItem('confessions');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setConfessions(parsed.map((c: any) => ({ ...c, timestamp: new Date(c.timestamp) })));
-      } catch (e) {}
-    }
+    const confessionsRef = query(
+      ref(database, 'confessions'),
+      orderByChild('timestamp'),
+      limitToLast(100)
+    );
+
+    const unsubscribe = onValue(confessionsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list: Confession[] = Object.entries(data).map(([id, val]: [string, any]) => ({
+          id,
+          content: val.content,
+          category: val.category,
+          likes: val.likes || 0,
+          isPremium: val.isPremium || false,
+          timestamp: val.timestamp,
+          txSignature: val.txSignature,
+        }));
+        // Sort newest first
+        list.sort((a, b) => b.timestamp - a.timestamp);
+        setConfessions(list);
+      } else {
+        setConfessions([]);
+      }
+      setIsLoading(false);
+    }, (err) => {
+      console.error('Firebase error:', err);
+      setError('Failed to load confessions');
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const refetch = useCallback(() => {
-    const stored = localStorage.getItem('confessions');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setConfessions(parsed.map((c: any) => ({ ...c, timestamp: new Date(c.timestamp) })));
-      } catch (e) {}
-    }
+    // Firebase handles real-time updates, but we can trigger a re-render
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 500);
   }, []);
 
   const submitConfession = useCallback(async (
@@ -50,7 +73,9 @@ export function useConfessions() {
     }
     setIsSubmitting(true);
     setError(null);
+
     try {
+      // Create on-chain transaction
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -62,22 +87,21 @@ export function useConfessions() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      // Pass as object with transaction and connection
       const result = await sendTransaction({ transaction, connection });
       const signature = result.signature;
 
-      const newConfession: Confession = {
-        id: Date.now().toString(),
+      // Save to Firebase
+      const confessionsRef = ref(database, 'confessions');
+      await push(confessionsRef, {
         content,
         category,
         likes: 0,
         isPremium,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         txSignature: signature,
-      };
-      const updated = [newConfession, ...confessions];
-      setConfessions(updated);
-      localStorage.setItem('confessions', JSON.stringify(updated));
+      });
+
+      console.log('✅ Confession submitted:', signature);
       return signature;
     } catch (err: any) {
       console.error('Failed:', err);
@@ -86,16 +110,21 @@ export function useConfessions() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [publicKey, wallet, connected, connection, confessions, sendTransaction]);
+  }, [publicKey, wallet, connected, connection, sendTransaction]);
 
   const likeConfession = useCallback(async (confessionId: string): Promise<string | null> => {
-    setConfessions(prev => {
-      const updated = prev.map(c => c.id === confessionId ? { ...c, likes: c.likes + 1 } : c);
-      localStorage.setItem('confessions', JSON.stringify(updated));
-      return updated;
-    });
-    return 'local';
-  }, []);
+    try {
+      const confessionRef = ref(database, `confessions/${confessionId}`);
+      const current = confessions.find(c => c.id === confessionId);
+      if (current) {
+        await update(confessionRef, { likes: (current.likes || 0) + 1 });
+      }
+      return 'liked';
+    } catch (err) {
+      console.error('Like failed:', err);
+      return null;
+    }
+  }, [confessions]);
 
   return { confessions, isSubmitting, isLoading, error, submitConfession, likeConfession, refetch };
 }
