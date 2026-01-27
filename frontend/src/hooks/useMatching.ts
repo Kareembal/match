@@ -35,7 +35,7 @@ export function useMatching() {
       if (data) {
         const list: MatchProfile[] = Object.entries(data).map(([id, val]) => {
           const v = val as MatchProfile;
-          return { id, ...v };
+          return { ...v, id };
         });
         setProfiles(list);
         

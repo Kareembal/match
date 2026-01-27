@@ -100,7 +100,7 @@ export default function Navigation() {
                 <button 
                   className="btn btn-secondary wallet-btn" 
                   onClick={handleWalletClick}
-                  onTouchEnd={handleWalletClick}
+                  
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   <Wallet size={14} />
