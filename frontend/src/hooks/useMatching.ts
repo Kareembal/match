@@ -1,11 +1,55 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { usePrivyWallet } from './usePrivyWallet';
+import { useSendTransaction } from '@privy-io/react-auth/solana';
 import { Transaction, SystemProgram } from '@solana/web3.js';
+import { database, ref, push, onValue, query, orderByChild, limitToLast, DataSnapshot } from '../lib/firebase';
+
+export interface MatchProfile {
+  id: string;
+  wallet: string;
+  interests: number[];
+  userAge: number;
+  lookingFor: number;
+  timestamp: number;
+}
 
 export function useMatching() {
-  const { connected, publicKey, wallet, connection } = usePrivyWallet();
+  const { connected, publicKey, wallet, connection, address } = usePrivyWallet();
+  const { sendTransaction } = useSendTransaction();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [profiles, setProfiles] = useState<MatchProfile[]>([]);
+  const [myProfile, setMyProfile] = useState<MatchProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Load profiles from Firebase
+  useEffect(() => {
+    const profilesRef = query(
+      ref(database, 'profiles'),
+      orderByChild('timestamp'),
+      limitToLast(100)
+    );
+
+    const unsubscribe = onValue(profilesRef, (snapshot: DataSnapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list: MatchProfile[] = Object.entries(data).map(([id, val]) => {
+          const v = val as MatchProfile;
+          return { id, ...v };
+        });
+        setProfiles(list);
+        
+        // Find my profile
+        if (address) {
+          const mine = list.find(p => p.wallet === address);
+          setMyProfile(mine || null);
+        }
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [address]);
 
   const registerPreferences = useCallback(async (
     interests: number[],
@@ -35,34 +79,39 @@ export function useMatching() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      let signature: string;
-      if (typeof wallet.sendTransaction === 'function') {
-        signature = await wallet.sendTransaction(transaction, connection);
-      } else if (typeof (wallet as any).signAndSendTransaction === 'function') {
-        const result = await (wallet as any).signAndSendTransaction({
-          chain: 'solana:devnet',
-          transaction: new Uint8Array(transaction.serialize({ requireAllSignatures: false, verifySignatures: false })),
-        });
-        signature = result.signature || result.hash || result;
-      } else {
-        signature = 'local-' + Date.now();
-      }
+      const result = await sendTransaction({ transaction, connection });
+      const signature = result.signature;
+
+      // Save to Firebase
+      const profilesRef = ref(database, 'profiles');
+      await push(profilesRef, {
+        wallet: address,
+        interests,
+        userAge,
+        lookingFor,
+        timestamp: Date.now(),
+        txSignature: signature,
+      });
 
       console.log('✅ Preferences registered:', signature);
-      
-      localStorage.setItem(`profile_${publicKey.toBase58()}`, JSON.stringify({
-        interests, userAge, lookingFor, tx: signature
-      }));
-
       return signature;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed:', err);
-      setError(err.message?.substring(0, 80) || 'Failed');
+      setError(err instanceof Error ? err.message?.substring(0, 80) : 'Failed');
       return null;
     } finally {
       setIsRegistering(false);
     }
-  }, [publicKey, wallet, connected, connection]);
+  }, [publicKey, wallet, connected, connection, address, sendTransaction]);
 
-  return { registerPreferences, isRegistering, error };
+  // Find potential matches
+  const findMatches = useCallback(() => {
+    if (!myProfile) return [];
+    return profiles.filter(p => 
+      p.wallet !== address && 
+      p.interests.some(i => myProfile.interests.includes(i))
+    );
+  }, [profiles, myProfile, address]);
+
+  return { registerPreferences, isRegistering, isLoading, profiles, myProfile, findMatches, error };
 }

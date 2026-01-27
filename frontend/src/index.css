@@ -725,3 +725,37 @@ textarea { resize: vertical; min-height: 100px; }
     color: var(--accent);
   }
 }
+
+/* Mobile Wallet Button Fix */
+@media (max-width: 768px) {
+  .nav-actions > div {
+    position: static !important;
+  }
+  
+  .wallet-dropdown {
+    position: fixed !important;
+    top: 70px !important;
+    bottom: auto !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: calc(100% - 32px) !important;
+    max-width: none !important;
+    z-index: 1000 !important;
+  }
+  
+  .nav-actions .btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+}
+
+/* Ensure dropdown is visible */
+.wallet-dropdown {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -16,7 +16,7 @@ const navItems = [
 const connection = new Connection('https://api.devnet.solana.com');
 
 export default function Navigation() {
-  const { ready, authenticated, login, logout, user } = usePrivy();
+  const { ready, authenticated, login, logout } = usePrivy();
   const { wallets, ready: walletsReady } = useSolanaWallets();
   const [showWallet, setShowWallet] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -35,14 +35,21 @@ export default function Navigation() {
     if (address) {
       try {
         const pk = new PublicKey(address);
-        connection.getBalance(pk).then(bal => {
-          setBalance(bal / LAMPORTS_PER_SOL);
-        }).catch(() => setBalance(null));
-      } catch {
-        setBalance(null);
-      }
+        connection.getBalance(pk).then(bal => setBalance(bal / LAMPORTS_PER_SOL)).catch(() => setBalance(null));
+      } catch { setBalance(null); }
     }
   }, [address]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClick = () => {
+      if (showWallet) setShowWallet(false);
+    };
+    if (showWallet) {
+      setTimeout(() => document.addEventListener('click', handleClick), 100);
+    }
+    return () => document.removeEventListener('click', handleClick);
+  }, [showWallet]);
 
   const copyAddress = () => {
     if (address) {
@@ -50,6 +57,12 @@ export default function Navigation() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleWalletClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowWallet(!showWallet);
   };
 
   const isConnected = ready && walletsReady && authenticated && !!address;
@@ -83,10 +96,11 @@ export default function Navigation() {
             {!ready ? (
               <button className="btn btn-secondary" disabled>...</button>
             ) : authenticated ? (
-              <div style={{ position: 'relative' }}>
+              <>
                 <button 
-                  className="btn btn-secondary" 
-                  onClick={() => setShowWallet(!showWallet)}
+                  className="btn btn-secondary wallet-btn" 
+                  onClick={handleWalletClick}
+                  onTouchEnd={handleWalletClick}
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   <Wallet size={14} />
@@ -131,7 +145,7 @@ export default function Navigation() {
                     )}
                   </div>
                 )}
-              </div>
+              </>
             ) : (
               <button className="btn btn-primary" onClick={login}>
                 Sign In
