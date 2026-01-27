@@ -28,13 +28,11 @@ export function useSolanaTransaction() {
   const sendTransaction = useCallback(async (transaction: Transaction | VersionedTransaction) => {
     if (!wallet) throw new Error('No wallet connected');
     
-    const result = await privySendTransaction(transaction as any, {
-      wallet,
-      connection,
-    });
+    // Privy's sendTransaction only takes the transaction
+    const result = await privySendTransaction(transaction as any);
     
     return result.signature;
-  }, [wallet, connection, privySendTransaction]);
+  }, [wallet, privySendTransaction]);
   
   return {
     connected,
