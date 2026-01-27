@@ -48,12 +48,9 @@ export function useConfessions() {
       setError('Not connected');
       return null;
     }
-
     setIsSubmitting(true);
     setError(null);
-
     try {
-      // Small self-transfer to record on-chain
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -61,16 +58,13 @@ export function useConfessions() {
           lamports: 1000,
         })
       );
-
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      // Use Privy's sendTransaction hook
-      const result = await sendTransaction(transaction);
+      // Pass as object with transaction and connection
+      const result = await sendTransaction({ transaction, connection });
       const signature = result.signature;
-
-      console.log('✅ Confession submitted:', signature);
 
       const newConfession: Confession = {
         id: Date.now().toString(),
@@ -81,11 +75,9 @@ export function useConfessions() {
         timestamp: new Date(),
         txSignature: signature,
       };
-
       const updated = [newConfession, ...confessions];
       setConfessions(updated);
       localStorage.setItem('confessions', JSON.stringify(updated));
-
       return signature;
     } catch (err: any) {
       console.error('Failed:', err);
