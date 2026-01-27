@@ -1,0 +1,10 @@
+[tooling]
+anchor_version = "0.32.1"
+solana_version = "2.3.0"
+
+[cluster]
+cluster_offset = 456
+
+[mxe]
+name = "confessions"
+description = "Anonymous Confessions & Confidential Matchmaking"

@@ -6,7 +6,7 @@ import { usePrivyWallet } from './usePrivyWallet';
 // Import the IDL
 import idl from '../idl/confessions.json';
 
-const PROGRAM_ID = new PublicKey('BycRJnXXAHuCMNUR9xY67rKkAvGqf4Z9KwPuRbYExKos');
+const PROGRAM_ID = new PublicKey('8kUxrbtzcR5fJe46C23tmtN3LKYhRdKJ9r7R5sSecbnE');
 const DEVNET_RPC = 'https://api.devnet.solana.com';
 
 export { BN, SystemProgram, PublicKey };

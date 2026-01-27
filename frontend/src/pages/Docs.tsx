@@ -3,7 +3,7 @@ import { Book, Shield, ExternalLink, Copy, Check, Server, Lock, Users, Cpu, Key 
 import { useState } from 'react';
 
 const contracts = {
-  programId: 'BycRJnXXAHuCMNUR9xY67rKkAvGqf4Z9KwPuRbYExKos',
+  programId: '8kUxrbtzcR5fJe46C23tmtN3LKYhRdKJ9r7R5sSecbnE',
   mxeAccount: '5tgstAkgJh6LMgkLHHd4oc6gQWkUWPRupWVyo497rgxpzasYowDxEWyXt3UEVQZqzYdpycZq1jidUWU9dLQgqnMb',
   deployTx: '5QaPHdYKogiPqZ8rUCU1NcbUnRDqNXc8fqKSJqfJ8biXj9cvrJKqxjpUN35mUm7PMEiCtrSfEoizXxYaLyPGEVJA',
   clusterOffset: 456,

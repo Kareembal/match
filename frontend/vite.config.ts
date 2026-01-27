@@ -1,24 +1,32 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig({
   plugins: [
     react(),
     nodePolyfills({
-      include: ['buffer', 'crypto', 'stream', 'util'],
+      include: ['buffer', 'process', 'util', 'stream', 'events', 'crypto'],
       globals: {
         Buffer: true,
+        global: true,
+        process: true,
       },
     }),
   ],
-  define: {
-    'process.env': {},
-    global: 'globalThis',
-  },
   resolve: {
     alias: {
-      buffer: 'buffer',
+      stream: 'stream-browserify',
     },
   },
-});
+  define: {
+    'process.env': {},
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
+    },
+  },
+})
